@@ -11,8 +11,9 @@ library(MASS)
 Rcpp::sourceCpp("fclogit_hg_sp.cpp")
 source("fclogit_wrapper.R")
 
-
-#------------------ data simulation ------------------#
+#-----------------------------------------------------------------------------#
+#------------------------------ data simulation -------------------------------
+#-----------------------------------------------------------------------------#
 
 # simulate.fclogit.data: generate stratified binary data from the conditional
 # logistic model with a fixed number of cases in each stratum.
@@ -50,7 +51,9 @@ simulate.fclogit.data = function(n.strata = 50, n = 6, m1 = 2,
 }
 
 
-#------------------ Example 1: ordinary fclogit using automatic HG/SP selection ------------------#
+#-----------------------------------------------------------------------------#
+#-------- Example 1: ordinary fclogit using automatic HG/SP selection --------
+#-----------------------------------------------------------------------------#
 
 n.vec <- c(rep(8, 10), rep(700, 10))
 m1.vec <- c(rep(2, 10), rep(350, 10))
@@ -70,8 +73,9 @@ summary(fit.auto)
 # The automatic rule is made per stratum.
 table(fit.auto$stratum.method)
 
-
-#------------------ Example 2: force HG and force SP ------------------#
+#-----------------------------------------------------------------------------#
+#---------------------- Example 2: force HG and force SP ----------------------
+#-----------------------------------------------------------------------------#
 
 # For small strata, HG is feasible and can be used as an exact benchmark.
 ex2 <- simulate.fclogit.data(n.strata = 80, n = 6, m1 = 2,
@@ -92,8 +96,9 @@ fit.sp <- fclogit.fit(y = ex2$y,
 
 cbind(HG = coef(fit.hg), SP = coef(fit.sp))
 
-
-#------------------ Example 3: Firth-corrected fclogit ------------------#
+#-----------------------------------------------------------------------------#
+#--------------------- Example 3: Firth-corrected fclogit ---------------------
+#-----------------------------------------------------------------------------#
 
 # A sparse example where Firth correction may be useful.
 ex3 <- simulate.fclogit.data(n.strata = 60, n = 4, m1 = 1,
@@ -108,8 +113,9 @@ fit.firth <- fclogit.fit(y = ex3$y,
 summary(fit.firth)
 exp(coef(fit.firth))
 
-
-#------------------ Example 4: demonstrate hybrid switching ------------------#
+#-----------------------------------------------------------------------------#
+#------------------ Example 4: demonstrate hybrid switching ------------------
+#-----------------------------------------------------------------------------#
 
 # The default c0 is intentionally permissive for many small examples.
 # To demonstrate mixed HG/SP selection, use a smaller c0.
@@ -133,8 +139,9 @@ fit.c0.small <- fclogit.fit(y = ex4$y,
 table(default.c0 = fit.c0.large$stratum.method)
 table(smaller.c0 = fit.c0.small$stratum.method)
 
-
-#------------------ Example 5: case/control flipping for HG ------------------#
+#-----------------------------------------------------------------------------#
+#------------------ Example 5: case/control flipping for HG ------------------
+#-----------------------------------------------------------------------------#
 
 # When a stratum has more cases than controls and HG is used, the implementation
 # evaluates the HG recursion on the smaller side and converts the contribution
@@ -151,8 +158,9 @@ fit.flip <- fclogit.fit(y = ex5$y,
 summary(fit.flip)
 table(fit.flip$hg.flip)
 
-
-#------------------ Example 6: extract estimates, standard errors, and intervals ------------------#
+#-----------------------------------------------------------------------------#
+#-------- Example 6: extract estimates, standard errors, and intervals -------
+#-----------------------------------------------------------------------------#
 
 beta.hat <- coef(fit.auto)
 se.hat <- sqrt(diag(vcov(fit.auto)))
@@ -169,7 +177,9 @@ out <- data.frame(Estimate = beta.hat,
 round(out, 4)
 
 
-#------------------ Optional check against survival::clogit ------------------#
+#-----------------------------------------------------------------------------#
+#----------------- Example 7: check against survival::clogit -----------------
+#-----------------------------------------------------------------------------#
 
 # This check is only for ordinary conditional logistic regression without Firth
 # correction. It is optional and requires the survival package.
@@ -177,3 +187,27 @@ if (requireNamespace("survival", quietly = TRUE)) {
   fit.clogit <- survival::clogit(y ~ x1 + x2 + strata(stratum), data = ex1)
   cbind(fclogit = coef(fit.hg), clogit = coef(fit.clogit))
 }
+
+
+#-----------------------------------------------------------------------------#
+#----------------- Example 8: data in grouped representation -----------------
+#-----------------------------------------------------------------------------#
+
+dat = data.frame(
+  pair = c(1, 1),
+  X = c(1, 0),
+  taxon_count = c(10, 20),
+  ref_count = c(1000, 500)
+)
+
+fit.grouped = fclogit.fit.grouped(
+  t1 = dat$taxon_count,
+  c = dat$taxon_count + dat$ref_count,
+  x = dat[, "X", drop = FALSE],
+  stratum = dat$pair,
+  method = "sp",
+  firth = FALSE
+)
+
+summary(fit.grouped)
+
